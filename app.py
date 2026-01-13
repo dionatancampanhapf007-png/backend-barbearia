@@ -103,5 +103,26 @@ def agenda():
     return jsonify([dict(row) for row in dados]), 200
 
 
-if __name__ == "__main__":
-    app.run()
+# ==========================================
+# ROTA PARA LER A AGENDA (ADMIN)
+# ==========================================
+@app.route("/agenda", methods=["GET"])
+def listar_agendamentos():
+    # Pega a data da URL ?data=2023-10-25 (opcional)
+    filtro_data = request.args.get("data")
+    
+    query = "SELECT * FROM agendamentos"
+    params = []
+
+    if filtro_data:
+        query += " WHERE data = ?"
+        params.append(filtro_data)
+    
+    query += " ORDER BY data, horario"
+
+    with conectar() as conn:
+        agendamentos = conn.execute(query, params).fetchall()
+        # Transforma os dados do banco em uma lista bonitinha para o site
+        lista = [dict(row) for row in agendamentos]
+    
+    return jsonify(lista), 200
