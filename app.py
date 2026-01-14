@@ -12,9 +12,6 @@ BARBEIROS = ["Arthur", "Alan"]
 HORA_ABERTURA = time(9, 0)
 HORA_FECHAMENTO = time(20, 0)
 
-# ======================
-# BANCO DE DADOS
-# ======================
 def conectar():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -34,24 +31,17 @@ def criar_tabela():
 
 criar_tabela()
 
-# ======================
-# VALIDAÇÕES
-# ======================
 def horario_valido(horario_str):
     h = datetime.strptime(horario_str, "%H:%M").time()
     return HORA_ABERTURA <= h < HORA_FECHAMENTO
 
 def dia_valido(data_str):
     data = datetime.strptime(data_str, "%Y-%m-%d")
-    return data.weekday() != 6  # domingo = 6
+    return data.weekday() != 6
 
-# ======================
-# ROTAS
-# ======================
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
-
 
 @app.route("/agendar", methods=["POST"])
 def agendar():
@@ -90,39 +80,23 @@ def agendar():
 
     return jsonify({"msg": "Agendamento confirmado"}), 201
 
-
-@app.route("/agenda", methods=["GET"])
-def agenda():
-    with conectar() as conn:
-        dados = conn.execute("""
-        SELECT cliente, barbeiro, data, horario
-        FROM agendamentos
-        ORDER BY data, horario
-        """).fetchall()
-
-    return jsonify([dict(row) for row in dados]), 200
-
-
-# ==========================================
-# ROTA PARA LER A AGENDA (ADMIN)
-# ==========================================
 @app.route("/agenda", methods=["GET"])
 def listar_agendamentos():
-    # Pega a data da URL ?data=2023-10-25 (opcional)
-    filtro_data = request.args.get("data")
-    
-    query = "SELECT * FROM agendamentos"
+    data = request.args.get("data")
+
+    query = "SELECT cliente, barbeiro, data, horario FROM agendamentos"
     params = []
 
-    if filtro_data:
+    if data:
         query += " WHERE data = ?"
-        params.append(filtro_data)
-    
+        params.append(data)
+
     query += " ORDER BY data, horario"
 
     with conectar() as conn:
-        agendamentos = conn.execute(query, params).fetchall()
-        # Transforma os dados do banco em uma lista bonitinha para o site
-        lista = [dict(row) for row in agendamentos]
-    
-    return jsonify(lista), 200
+        dados = conn.execute(query, params).fetchall()
+
+    return jsonify([dict(row) for row in dados]), 200
+
+if __name__ == "__main__":
+    app.run()
